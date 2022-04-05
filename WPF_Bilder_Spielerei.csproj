@@ -75,8 +75,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="ImageDaten.cs" />
-    <Compile Include="SQLite_Image_Save_Load.cs" />
+    <Compile Include="Klassen\ImageDaten.cs" />
+    <Compile Include="Klassen\SQLite_Image_Save_Load.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
