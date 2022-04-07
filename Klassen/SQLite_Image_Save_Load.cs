@@ -1,14 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using WPF_Bilder_Spielerrei;
 
 namespace WPF_Bilder_Spielerei
 {
     public class SQLite_Image_Save_Load
     {
-
+        //klasse
+        public List<ImageDaten> bilder = new List<ImageDaten>();
 
         //Convert Methode
         internal byte[] ImageToByte(System.Drawing.Image image)
@@ -19,6 +24,29 @@ namespace WPF_Bilder_Spielerei
                 image.Save(ms, image.RawFormat);
                 byte[] imageBytes = ms.ToArray();
                 return imageBytes;
+            }
+        }
+
+        //Erstellen der Datenbank
+        internal void Datenbank()
+        {
+
+            SQLiteConnection con = new SQLiteConnection();
+            SQLiteCommand cmd;
+
+            con.ConnectionString = "Data Source=Bilder.db;";
+            cmd = con.CreateCommand();
+
+            try
+            {
+                con.Open();
+                cmd.CommandText = "CREATE TABLE bilder (id INTEGER PRIMARY KEY AUTOINCREMENT, image BLOB, image_name TEXT)";
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
 
@@ -63,7 +91,7 @@ namespace WPF_Bilder_Spielerei
 
 
         //Daten löschen
-        public void DeleteImage_BilderDB(int id)
+        internal void DeleteImage_BilderDB(int id)
         {
             string cs = @"Data Source = Bilder.db; ";
             SQLiteConnection con = new SQLiteConnection(cs);
@@ -93,7 +121,6 @@ namespace WPF_Bilder_Spielerei
             con.Close();
         }
 
-
         //Convert zu BitmapImage
         internal BitmapImage ByteToImage(byte[] imageBytes)
         {
@@ -106,6 +133,58 @@ namespace WPF_Bilder_Spielerei
                 image.EndInit();
                 return image;
             }
+        }
+
+        //load images
+        internal void Loadimages()
+        {
+
+            string cs = @"Data Source = Bilder.db; ";
+            SQLiteConnection con = new SQLiteConnection(cs);
+            SQLiteCommand cmd;
+
+            cmd = con.CreateCommand();
+            cmd.CommandText = string.Format("SELECT * FROM bilder WHERE ROWID;");
+
+            con.Open();
+            try
+            {
+                IDataReader reader = cmd.ExecuteReader();
+                try
+                {
+                    while (reader.Read())
+                    {
+                        int idd = Convert.ToInt32((Int64)(reader[0]));
+                        byte[] a = (System.Byte[])reader[1];
+
+
+                        //Convert und zuweisen
+                        ImageDaten daten = new ImageDaten();
+                        System.Windows.Controls.Image pdf = new System.Windows.Controls.Image()
+                        {
+                            Stretch = Stretch.Fill,
+                            MaxHeight = 100,
+                            MaxWidth = 100
+
+                        };
+
+                        pdf.Source = ByteToImage(a);
+                        daten.Images = pdf;
+                        daten.Id = idd;
+
+                        bilder.Add(daten);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    MessageBox.Show(exc.Message);
+                }
+            }
+            catch (Exception exc)
+            {
+                MessageBox.Show(exc.Message);
+            }
+            con.Close();
         }
     }
 }

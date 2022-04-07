@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.SQLite;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -20,10 +17,7 @@ namespace WPF_Bilder_Spielerei
     /// 
     public partial class MainWindow : Window
     {
-        //liste erstellen
-        public List<ImageDaten> bilder = new List<ImageDaten>();
-
-        int id = 0;
+        private int id = 0;
 
         //Felder
         private readonly ContextMenu cm = new ContextMenu
@@ -45,13 +39,13 @@ namespace WPF_Bilder_Spielerei
             //Delete button
             _ = cm.Items.Add(delete);
 
-            //Klassen Instanz
+            //Instanz
             save_Load = new SQLite_Image_Save_Load();
         }
 
         public void List()
         {
-            foreach (ImageDaten daten in bilder)
+            foreach (ImageDaten daten in save_Load.bilder)
             {
                 StackPanel panel = new StackPanel();
                 panel.Children.Add(daten.Images);
@@ -59,6 +53,7 @@ namespace WPF_Bilder_Spielerei
                 view_List.Items.Add(panel);
             }
         }
+
         //Drop methode
         private void Picture_panel_Drop(object sender, DragEventArgs e)
         {
@@ -90,7 +85,7 @@ namespace WPF_Bilder_Spielerei
                 //liste daten
                 daten.Id = id;
                 daten.Images = images;
-                bilder.Add(daten);
+                save_Load.bilder.Add(daten);
 
                 StackPanel panel = new StackPanel();
                 panel.Children.Add(daten.Images);
@@ -113,8 +108,8 @@ namespace WPF_Bilder_Spielerei
             int index = view_List.SelectedIndex;
             if (index >= 0)
             {
-                datein = bilder.ElementAt(index);
-                bilder.RemoveAt(index);
+                datein = save_Load.bilder.ElementAt(index);
+                save_Load.bilder.RemoveAt(index);
                 view_List.Items.Remove(view_List.SelectedItem);
                 save_Load.DeleteImage_BilderDB(datein.Id);
             }
@@ -123,85 +118,16 @@ namespace WPF_Bilder_Spielerei
         //Erstellen der Datenbank Wen nicht vorhanden
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            if (File.Exists("Bilder.db"))
             {
-                if (File.Exists("Bilder.db"))
-                {
-                    Loadimage();
-                    return;
-                }
-
-                SQLiteConnection con = new SQLiteConnection();
-                SQLiteCommand cmd;
-
-                con.ConnectionString = "Data Source=Bilder.db;";
-                cmd = con.CreateCommand();
-
-                try
-                {
-                    con.Open();
-                    cmd.CommandText = "CREATE TABLE bilder (id INTEGER PRIMARY KEY AUTOINCREMENT, image BLOB, image_name TEXT)";
-                    cmd.ExecuteNonQuery();
-                    con.Close();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
+                save_Load.Loadimages();
+                List();
+                return;
             }
-        }
-
-
-        //load images
-        internal void Loadimage()
-        {
-
-            string cs = @"Data Source = Bilder.db; ";
-            SQLiteConnection con = new SQLiteConnection(cs);
-            SQLiteCommand cmd;
-
-            cmd = con.CreateCommand();
-            cmd.CommandText = string.Format("SELECT * FROM bilder WHERE ROWID;");
-
-            con.Open();
-            try
+            else
             {
-                IDataReader reader = cmd.ExecuteReader();
-                try
-                {
-                    while (reader.Read())
-                    {
-                        int idd = Convert.ToInt32((Int64)(reader[0]));
-                        byte[] a = (System.Byte[])reader[1];
-                        
-
-                        //Convert und zuweisen
-                        ImageDaten daten = new ImageDaten();
-                        System.Windows.Controls.Image pdf = new System.Windows.Controls.Image()
-                        {
-                            Stretch = Stretch.Fill,
-                            MaxHeight = 100,
-                            MaxWidth = 100
-
-                        };
-
-                        pdf.Source = save_Load.ByteToImage(a);
-                        daten.Images = pdf;
-                        daten.Id = idd;
-                        
-                        bilder.Add(daten);
-                    }
-                }
-                catch (Exception exc)
-                {
-                    MessageBox.Show(exc.Message);
-                }
+                save_Load.Datenbank();
             }
-            catch (Exception exc)
-            {
-                MessageBox.Show(exc.Message);
-            }
-            con.Close();
-            List();
         }
     }
 }
